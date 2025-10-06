@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PV-Anlagen Rechner – High-End Deluxe (Validierte Logik)</title>
+  <style>
+    :root{
+      --brand:#0A5C6B; --brand-2:#0C6A7B; --bg:#f0f4f8; --card:#fff; --muted:#666
+    }
+    *{box-sizing:border-box}
+    body{font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:#222;padding:24px}
+    .container{max-width:1100px;margin:auto;background:var(--card);padding:28px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.08)}
+    h1{margin:0 0 8px;color:var(--brand)}
+    .sub{color:var(--muted);margin-bottom:24px}
+    .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px}
+    .col-6{grid-column:span 6}
+    .col-4{grid-column:span 4}
+    .col-3{grid-column:span 3}
+    .col-8{grid-column:span 8}
+    .col-12{grid-column:span 12}
+    label{font-weight:600;font-size:14px}
+    input,select{width:100%;padding:10px 12px;border:1px solid #dcdfe4;border-radius:8px;margin-top:6px}
+    .hint{font-size:12px;color:#888;margin-top:4px}
+    button{margin-top:18px;padding:14px 16px;background:var(--brand);color:#fff;border:none;border-radius:10px;cursor:pointer;font-weight:700}
+    button:hover{background:var(--brand-2)}
+    .section{padding:16px;border:1px solid #e9eef2;border-radius:12px;margin-bottom:16px}
+    .results{display:none;margin-top:18px}
+    .kpi{background:#f6fbfc;border:1px solid #d7eef2;padding:16px;border-radius:12px}
+    .kpi h3{margin:0 0 8px;color:var(--brand)}
+    .row{display:flex;gap:16px;flex-wrap:wrap}
+    .pill{background:#eef7f9;border-radius:999px;padding:6px 10px;font-size:12px;color:#0a5c6b}
+    .muted{color:#666}
+    .hr{height:1px;background:#edf1f4;margin:16px 0}
+    .note{font-size:12px;color:#555}
+    .table{width:100%;border-collapse:collapse}
+    .table th,.table td{border-bottom:1px solid #eef2f5;padding:8px 6px;text-align:right}
+    .table th:first-child,.table td:first-child{text-align:left}
+    .right{float:right}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>PV‑Anlagen‑Rechner – High‑End Deluxe</h1>
+    <div class="sub">Validierte, nachvollziehbare Mathematik: spezifischer Ertrag, Performance Ratio, Lastprofil & Batterieshift – plus Wirtschaftlichkeit (Cashflow/NPV/ROI).</div>
+
+    <div class="grid">
+      <div class="col-12 section">
+        <h3>1) Verbrauch & Preise</h3>
+        <div class="grid">
+          <div class="col-4">
+            <label>Jahresstromverbrauch (kWh)</label>
+            <input id="verbrauch" type="number" placeholder="z. B. 3500" value="3500"/>
+          </div>
+          <div class="col-4">
+            <label>Aktueller Strompreis (ct/kWh)</label>
+            <input id="strompreis" type="number" placeholder="z. B. 35" value="35"/>
+            <div class="hint">Bruttopreis Haushalt</div>
+          </div>
+          <div class="col-4">
+            <label>Strompreissteigerung p. a. (%)</label>
+            <input id="preisEsc" type="number" value="2"/>
+          </div>
+          <div class="col-4">
+            <label>Einspeisevergütung (ct/kWh)</label>
+            <input id="eeg" type="number" value="8"/>
+            <div class="hint">Anpassbar je nach Anlagengröße/Tarif</div>
+          </div>
+          <div class="col-4">
+            <label>Diskontsatz für NPV (%)</label>
+            <input id="discount" type="number" value="4"/>
+          </div>
+          <div class="col-4">
+            <label>Betrachtungszeitraum (Jahre)</label>
+            <input id="horizon" type="number" value="20"/>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12 section">
+        <h3>2) Standort & Dach</h3>
+        <div class="grid">
+          <div class="col-3">
+            <label>PLZ</label>
+            <input id="plz" placeholder="z. B. 04109" />
+          </div>
+          <div class="col-3">
+            <label>Nutzbare Dachfläche (m²)</label>
+            <input id="dachflaeche" type="number" value="40"/>
+          </div>
+          <div class="col-3">
+            <label>Azimut/Ausrichtung</label>
+            <select id="ausrichtung">
+              <option value="1">Süd (optimal)</option>
+              <option value="0.95">Südost / Südwest</option>
+              <option value="0.9">Ost / West</option>
+              <option value="0.8">O/W flach (Flachdach)</option>
+              <option value="0.75">Nordost / Nordwest</option>
+              <option value="0.6">Nord</option>
+            </select>
+          </div>
+          <div class="col-3">
+            <label>Verschattung</label>
+            <select id="verschattung">
+              <option value="1">Keine</option>
+              <option value="0.95">Gering</option>
+              <option value="0.85">Mittel</option>
+              <option value="0.7">Stark</option>
+            </select>
+          </div>
+          <div class="col-3">
+            <label>Basis‑Spezifischer Ertrag (kWh/kWp)</label>
+            <input id="baseYield" type="number" value="1050"/>
+            <div class="hint">Standortwert vor Korrekturen</div>
+          </div>
+          <div class="col-3">
+            <label>Performance Ratio PR (%)</label>
+            <input id="pr" type="number" value="85"/>
+            <div class="hint">Verluste: Temp., Leitungen, WR, Soiling</div>
+          </div>
+          <div class="col-3">
+            <label>Einspeisebegrenzung (% P<sub>PV</sub>)</label>
+            <input id="feedCap" type="number" value="100"/>
+            <div class="hint">70 = pauschale 70‑%‑Begrenzung (≈5 % Minderertrag)</div>
+          </div>
+          <div class="col-3">
+            <label>Degradation p. a. (%)</label>
+            <input id="deg" type="number" value="0.35"/>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12 section">
+        <h3>3) Module & Speicher</h3>
+        <div class="grid">
+          <div class="col-3">
+            <label>Modultyp (Wp)</label>
+            <select id="modul">
+              <option value="400">Mono 400</option>
+              <option value="370">Poly 370</option>
+              <option value="450">Glas‑Glas 450</option>
+            </select>
+          </div>
+          <div class="col-3">
+            <label>Modul‑Wirkungsgrad (%)</label>
+            <input id="wirkungsgrad" type="number" value="20"/>
+            <div class="hint">Oder individuell ändern</div>
+          </div>
+          <div class="col-3">
+            <label>Speicher (kWh, 0 = keiner)</label>
+            <input id="batKWh" type="number" value="5"/>
+          </div>
+          <div class="col-3">
+            <label>Rundtrip‑Wirkungsgrad Speicher (%)</label>
+            <input id="batEta" type="number" value="90"/>
+          </div>
+          <div class="col-3">
+            <label>Usable DoD Speicher (%)</label>
+            <input id="batDoD" type="number" value="90"/>
+          </div>
+          <div class="col-3">
+            <label>Lastprofil</label>
+            <select id="profil">
+              <option value="evening">Abendlast (Standard)</option>
+              <option value="balanced">Ausgeglichen</option>
+              <option value="day">Tageslast (Home‑Office)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12 section">
+        <h3>4) Kosten & OPEX</h3>
+        <div class="grid">
+          <div class="col-3">
+            <label>PV‑Kosten (€/kWp)</label>
+            <input id="costPerKwp" type="number" value="1300"/>
+          </div>
+          <div class="col-3">
+            <label>Fixkosten (Gerüst/Planung) (€)</label>
+            <input id="fixedCost" type="number" value="1500"/>
+          </div>
+          <div class="col-3">
+            <label>Speicherkosten (€/kWh)</label>
+            <input id="batCostPerKwh" type="number" value="800"/>
+          </div>
+          <div class="col-3">
+            <label>Förderung (‑€)</label>
+            <input id="subsidy" type="number" value="0"/>
+          </div>
+          <div class="col-3">
+            <label>O&M p. a. (% von CAPEX)</label>
+            <input id="omPct" type="number" value="1.0"/>
+          </div>
+          <div class="col-3">
+            <label>WR‑Ersatz Jahr 15 (€)</label>
+            <input id="invReplace" type="number" value="1500"/>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12">
+        <button onclick="berechnePV()">Berechnen</button>
+      </div>
+
+      <div id="results" class="col-12 results">
+        <div class="grid">
+          <div class="col-6 kpi">
+            <h3>Technik & Ertrag</h3>
+            <div id="kpiTech"></div>
+          </div>
+          <div class="col-6 kpi">
+            <h3>Wirtschaftlichkeit</h3>
+            <div id="kpiFin"></div>
+          </div>
+          <div class="col-12">
+            <div class="hr"></div>
+            <h3>Jährliche Cashflows (modelliert)</h3>
+            <table class="table" id="cfTable">
+              <thead>
+                <tr>
+                  <th>Jahr</th>
+                  <th>PV‑Ertrag (kWh)</th>
+                  <th>Eigenverbrauch (kWh)</th>
+                  <th>Einspeisung (kWh)</th>
+                  <th>Ersparnis (€)</th>
+                  <th>Einnahmen EEG (€)</th>
+                  <th>O&M (€)</th>
+                  <th>Netto (€)</th>
+                  <th>Kumuliert (€)</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+            <div class="note">Hinweis: Modell mit heuristischer Lastverschiebung. Für Angebote bitte Ertragssimulation (z. B. PVGIS) und Lastgangdaten verwenden.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+
+    function selfConsumptionNoBattery(dailyPV,dailyLoad,profile){
+      // Heuristik: Abendlast konsumiert ~22–30%, ausgeglichen 28–36%, Tageslast 35–45%
+      const baseByProfile={evening:0.26, balanced:0.31, day:0.38};
+      let base=baseByProfile[profile]||0.28;
+      // Abhängigkeit vom Verhältnis PV/Last: mehr PV -> mehr Überschuss -> geringerer Anteil
+      const ratio = dailyPV/dailyLoad; // >1 => Überschuss
+      const adj = clamp(0.35 - 0.06*Math.log10(ratio+0.1), 0.15, 0.45);
+      // Mittle zwischen Profilbasis und Anpassung
+      const scr = clamp(0.5*base + 0.5*adj, 0.15, 0.5);
+      return scr*dailyLoad; // kWh/Tag eigenverbraucht ohne Speicher
+    }
+
+    function batteryShift(dailyPV,dailyLoad,ev0,bCap,eta){
+      // Ein Zyklus/Tag; nutzbare Kapazität:
+      if(bCap<=0) return 0;
+      const surplus = Math.max(0, dailyPV - ev0); // kWh/Tag Überschuss ohne Speicher
+      const remainingLoad = Math.max(0, dailyLoad - ev0); // Restlast, die verschiebbar ist
+      const shift = Math.min(surplus, Math.min(bCap, remainingLoad));
+      return shift * eta; // zusätzliche kWh/Tag eigenverbraucht mit Speicher
+    }
+
+    function berechnePV(){
+      // Eingaben
+      const verbrauch = +document.getElementById('verbrauch').value || 0;
+      const strompreis_ct = +document.getElementById('strompreis').value || 0;
+      const preisEsc = (+document.getElementById('preisEsc').value||0)/100;
+      const eeg_ct = +document.getElementById('eeg').value || 0;
+      const discount = (+document.getElementById('discount').value||0)/100;
+      const horizon = Math.max(1, +document.getElementById('horizon').value||20);
+
+      const dachflaeche = +document.getElementById('dachflaeche').value || 0;
+      const ausrichtung = +document.getElementById('ausrichtung').value || 1;
+      const verschattung = +document.getElementById('verschattung').value || 1;
+      const baseYield = +document.getElementById('baseYield').value || 1050; // kWh/kWp
+      const pr = (+document.getElementById('pr').value||85)/100;
+      const feedCap = +document.getElementById('feedCap').value || 100;
+      const deg = (+document.getElementById('deg').value||0.3)/100;
+
+      const wattProModul = +document.getElementById('modul').value || 400;
+      const etaMod = (+document.getElementById('wirkungsgrad').value||20)/100;
+      const batKWhGross = +document.getElementById('batKWh').value || 0;
+      const batEta = (+document.getElementById('batEta').value||90)/100;
+      const batDoD = (+document.getElementById('batDoD').value||90)/100;
+      const profil = document.getElementById('profil').value;
+
+      const costPerKwp = +document.getElementById('costPerKwp').value || 1300;
+      const fixedCost = +document.getElementById('fixedCost').value || 1500;
+      const batCostPerKwh = +document.getElementById('batCostPerKwh').value || 800;
+      const subsidy = +document.getElementById('subsidy').value || 0;
+      const omPct = (+document.getElementById('omPct').value||1)/100;
+      const invReplace = +document.getElementById('invReplace').value || 0;
+
+      // Geometrie/Module: STC 1000 W/m² => Modulfläche = P/ (η * 1000)
+      const modulFlaeche = (wattProModul/1000) / etaMod; // m² pro Modul
+      const anzahlModule = Math.max(0, Math.floor(dachflaeche / modulFlaeche));
+      const kWp = (anzahlModule * wattProModul)/1000;
+
+      // Spezifischer Ertrag
+      let spec = baseYield * ausrichtung * verschattung * pr; // kWh/kWp*a
+      // Pauschaler Verlust bei 70%-Cap (~5%)
+      if(feedCap < 100) spec *= 0.95;
+
+      const annualPV0 = kWp * spec; // kWh/a Jahr 1
+
+      // Tageswerte
+      const dailyLoad = verbrauch/365;
+      const dailyPV0 = annualPV0/365;
+
+      // Eigenverbrauch ohne Speicher (kWh/Tag)
+      const ev0 = selfConsumptionNoBattery(dailyPV0, dailyLoad, profil);
+      // Batterieverschiebung
+      const bUsable = batKWhGross * batDoD; // kWh
+      const addEV = batteryShift(dailyPV0, dailyLoad, ev0, bUsable, batEta);
+      const evDay = Math.min(dailyLoad, ev0 + addEV);
+
+      const annualEV0 = evDay * 365; // Jahr 1
+      let annualFeed0 = Math.max(0, annualPV0 - annualEV0);
+
+      // Kosten (CAPEX)
+      const capexPV = kWp * costPerKwp;
+      const capexBat = batKWhGross * batCostPerKwh;
+      const CAPEX = Math.max(0, capexPV + capexBat + fixedCost - subsidy);
+
+      // KPIs Jahr 1
+      const price_eur = strompreis_ct/100;
+      const eeg_eur = eeg_ct/100;
+      const savingsY1 = annualEV0 * price_eur;
+      const feedRevY1 = annualFeed0 * eeg_eur;
+      const omY1 = CAPEX * omPct;
+      const netY1 = savingsY1 + feedRevY1 - omY1;
+
+      // Cashflow Simulation über Horizon
+      const tbody = document.querySelector('#cfTable tbody');
+      tbody.innerHTML = '';
+
+      let cum = -CAPEX; // Start mit Investition
+      let npv = -CAPEX; // Diskontiert
+      let annualPV = annualPV0;
+      let annualEV = annualEV0;
+      let annualFeed = annualFeed0;
+      let elecPrice = price_eur;
+
+      for(let y=1; y<=horizon; y++){
+        if(y>1){
+          // Degradation PV
+          annualPV *= (1 - deg);
+          // Wir skalieren Eigenverbrauch und Einspeisung proportional zum PV‑Ertrag
+          const scale = annualPV/ (annualPV + 1e-9);
+          // Näherung: gleiche relativen Anteile
+          const shareEV = annualEV / (annualEV + annualFeed + 1e-9);
+          annualEV = Math.min(annualPV, shareEV * annualPV);
+          annualFeed = Math.max(0, annualPV - annualEV);
+          // Strompreis Eskalation
+          elecPrice *= (1 + preisEsc);
+        }
+        let savings = annualEV * elecPrice;
+        let feedRev = annualFeed * eeg_eur; // konst. EEG
+        let om = CAPEX * omPct;
+        let repl = 0;
+        if(y===15 && invReplace>0) repl = invReplace; // WR‑Ersatz
+
+        const net = savings + feedRev - om - repl;
+        cum += net;
+        const disc = Math.pow(1+discount, y);
+        npv += net / disc;
+
+        const tr = document.createElement('tr');
+        const cols = [y, annualPV, annualEV, annualFeed, savings, feedRev, (om+repl), net, cum]
+          .map((v,i)=>{
+            const td=document.createElement('td');
+            td.textContent = i===0 ? v : (i<=3? Math.round(v).toLocaleString('de-DE') : v.toFixed(0).toLocaleString('de-DE'));
+            return td;
+          });
+        cols.forEach(td=>tr.appendChild(td));
+        tbody.appendChild(tr);
+      }
+
+      // ROI (undiskontiert) über Horizont
+      const totalUndiscounted = cum; // bereits kumuliert nach Abzug CAPEX
+      const roi = (totalUndiscounted / CAPEX) * 100;
+
+      // Payback (einfach)
+      let payback = '—';
+      let cum2 = -CAPEX;
+      annualPV = annualPV0; annualEV = annualEV0; annualFeed = annualFeed0; elecPrice = price_eur;
+      for(let y=1;y<=horizon;y++){
+        if(y>1){ annualPV *= (1-deg); const shareEV = annualEV/(annualEV+annualFeed+1e-9); annualEV = Math.min(annualPV, shareEV*annualPV); annualFeed = Math.max(0, annualPV - annualEV); elecPrice *= (1+preisEsc); }
+        let savings = annualEV * elecPrice; let feedRev = annualFeed * eeg_eur; let om = CAPEX*omPct; let repl = (y===15?invReplace:0);
+        cum2 += (savings+feedRev-om-repl);
+        if(cum2>=0){ payback = y+" Jahre"; break; }
+      }
+
+      // KPIs ausgeben
+      const kpiTech = document.getElementById('kpiTech');
+      const kpiFin = document.getElementById('kpiFin');
+      kpiTech.innerHTML = `
+        <div class="row">
+          <span class="pill">Leistung: <b>${kWp.toFixed(2)} kWp</b></span>
+          <span class="pill">Module: <b>${anzahlModule} × ${wattProModul} Wp</b></span>
+          <span class="pill">Modulfläche pro Stück: <b>${modulFlaeche.toFixed(2)} m²</b></span>
+          <span class="pill">Spez. Ertrag Jahr 1: <b>${Math.round(spec)} kWh/kWp</b></span>
+          <span class="pill">PV‑Ertrag Jahr 1: <b>${Math.round(annualPV0)} kWh</b></span>
+          <span class="pill">Eigenverbrauch Jahr 1: <b>${Math.round(annualEV0)} kWh</b></span>
+          <span class="pill">Einspeisung Jahr 1: <b>${Math.round(annualFeed0)} kWh</b></span>
+        </div>
+        <div class="muted">Hinweis: Eigenverbrauch berechnet über Profil‑Heuristik + Batterieshift (1 Zyklus/Tag, η<sub>rt</sub>, DoD).</div>
+      `;
+
+      kpiFin.innerHTML = `
+        <div class="row">
+          <span class="pill">CAPEX: <b>${Math.round(CAPEX).toLocaleString('de-DE')} €</b></span>
+          <span class="pill">Ersparnis Jahr 1: <b>${Math.round(savingsY1).toLocaleString('de-DE')} €</b></span>
+          <span class="pill">EEG Jahr 1: <b>${Math.round(feedRevY1).toLocaleString('de-DE')} €</b></span>
+          <span class="pill">O&M Jahr 1: <b>${Math.round(omY1).toLocaleString('de-DE')} €</b></span>
+          <span class="pill">Payback: <b>${payback}</b></span>
+          <span class="pill">ROI ${horizon}J (undisk.): <b>${roi.toFixed(1)} %</b></span>
+          <span class="pill">NPV (${horizon}J, ${ (discount*100).toFixed(1)}%): <b>${Math.round(npv).toLocaleString('de-DE')} €</b></span>
+        </div>
+        <div class="muted">Einspeisevergütung als fix angenommen; Strompreis eskaliert um ${ (preisEsc*100).toFixed(1)}%/a; PV‑Degradation ${ (deg*100).toFixed(2)}%/a.</div>
+      `;
+
+      document.getElementById('results').style.display='block';
+    }
+  </script>
+</body>
+</html>
